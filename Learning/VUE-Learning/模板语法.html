@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>模板语法</title>
+		<script src="./js/vue.js"></script>
+		<style>
+		.class1{
+			background: #444;
+			color: #eee;
+		}
+		</style>
+	</head>
+	<body>
+		<div id="app">
+			<h1>文本</h1>
+			<p>{{ message }}</p>
+			<hr />
+			
+			<div v-html="message1"></div>
+			<hr />
+			
+			<h1>属性</h1>
+			<label for="r1">修改颜色</label><input type="checkbox" v-model="use" id="r1">
+				<br><br>
+				<div v-bind:class="{'class1': use}">v-bind:class 指令
+				<!-- use为true时使用class1属性 -->
+			</div>
+			<hr />
+			
+			<h1>表达式</h1>
+			{{5+5}}<br>
+			{{ ok ? 'YES' : 'NO' }}<br>
+			{{ message2.split('').reverse().join('') }}
+			<div v-bind:id="'list-' + id">菜鸟教程</div>
+			<hr />
+			
+			<h1>指令、条件判断</h1>
+			<p v-if="seen">现在你看到我了</p>
+			<template v-if="ok">
+				<h3>菜鸟教程</h3>
+				<p>学的不仅是技术，更是梦想！</p>
+				<p>哈哈哈，打字辛苦啊！！！</p>
+			</template>
+			<p>v-if 指令将根据表达式 seen 的值(true 或 false )来决定是否插入 p 元素。</p>
+			<hr />
+			
+			<h1>参数</h1>
+			<pre><a v-bind:href="url">地址URL传参</a></pre>
+			<p>在这里 href 是参数，告知 v-bind 指令将该元素的 href 属性与表达式 url 的值绑定。</p>
+			<hr />
+			
+			<h1>用户输入</h1>
+			<p>{{ message2 }}</p>
+			<input v-model="message2">
+			<p>v-model 指令用来在 input、select、textarea、checkbox、radio 等表单控件元素上创建双向数据绑定，根据表单上的值，自动更新绑定的元素的值。</p>
+			<hr />
+			
+			<h1>字串反转</h1>
+			<p>{{ message3 }}</p>
+			<button v-on:click="reverseMessage">反转字符串</button>
+			<p>按钮的事件我们可以使用 v-on 监听事件，并对用户的输入进行响应。</p>
+			<hr />
+			
+			<h1>过滤器</h1>
+			{{ message4 | capitalize }}
+			<hr />
+			
+			<h1>条件判断</h1>
+			<p>随机生成一个数字，判断是否大于0.5，然后输出对应信息：</p>
+			<div v-if="Math.random() > 0.5">
+				Sorry
+			</div>
+			<div v-else>
+				Not sorry
+			</div>
+			<h3>v-else-if</h3>
+			<div v-if="type === 'A'">
+				A
+			</div>
+			<div v-else-if="type === 'B'">
+				B
+			</div>
+			<div v-else-if="type === 'C'">
+				C
+			</div>
+			<div v-else>
+				Not A/B/C
+			</div>
+			<h2 v-show="ok1">Hello!</h2>
+			<hr />
+			
+			<h1>循环语句</h1>
+			<h3>v-for</h3>
+			<ol>
+			    <li v-for="site in sites">
+					{{ site.name }}
+			    </li>
+			</ol>
+			 <ul>
+			    <template v-for="site in sites">
+					<li>{{ site.name }}</li>
+					<li>--------------</li>
+			    </template>
+			</ul>
+			
+			<h3>v-for迭代对象</h3>
+			<ul>
+			    <li v-for="value in object">
+				{{ value }}
+				</li>
+			</ul>
+			<br />
+			<ul>
+			    <li v-for="(value, key) in object">
+			    {{ key }} : {{ value }}
+			    </li>
+			</ul>
+			<br />
+			<ul>
+			    <li v-for="n in 10">
+			     {{ n }}
+			    </li>
+			</ul>
+			<hr />
+			
+			<h1>计算机属性</h1>
+			<p>原始字符串: {{ message2 }}</p>
+			<p>计算后反转字符串: {{ reversedMessage }}</p>
+			<p>使用方法后反转字符串: {{ reversedMessage2() }}</p>
+			<h3>computed setter</h3>
+			<p>{{ site }}</p>
+			<hr />
+			
+			<h1>监听属性</h1>
+			<h3>使用 watch 实现计数器：</h3>
+			<p style = "font-size:25px;">计数器: {{ counter }}</p>
+			 <button @click = "counter++" style = "font-size:25px;">点我</button>
+			<br />
+			<h3>千米与米之间的换算：</h3>
+			<div id = "computed_props">
+				千米 : <input type = "text" v-model = "kilometers">
+				米 : <input type = "text" v-model = "meters">
+			</div>
+			<p id="info"></p>
+			<hr />
+			
+		</div>
+		<script>
+			var vm = new Vue({
+				el: '#app',
+				data: {
+					message: '文本 :Hello Vue.js!',
+					message1: '<h1>Html</h1>',
+					use: false,
+					ok: true,
+					message2: 'RUNOOB',
+					id : 1,
+					seen: true,
+					ok: true,
+					url: 'http://www.runoob.com',
+					message2: 'Runoob!',
+					message3: 'Runoob!',
+					message4: 'runoob',
+					type: 'B',
+					ok1: true,
+					name: 'Google',
+					url1: 'http://www.google.com',
+					sites: [
+					    { name: 'Runoob' },
+					    { name: 'Google' },
+					    { name: 'Taobao' }
+					],
+					object: {
+						name: '菜鸟教程',
+						url: 'http://www.runoob.com',
+						slogan: '学的不仅是技术，更是梦想！'
+					},
+					counter:1,
+					kilometers : 0,
+					meters:0
+				},
+				methods: {
+					reverseMessage: function () {
+						this.message3 = this.message3.split('').reverse().join('')
+					},
+					reversedMessage2: function () {
+					    return this.message2.split('').reverse().join('')
+					}
+				},
+				filters: {
+					capitalize: function (value) {
+						if (!value) return ''
+						value = value.toString()
+						return value.charAt(0).toUpperCase() + value.slice(1)
+					}
+				},
+				computed: {
+				    // 计算属性的 getter
+				    reversedMessage: function () {
+						// `this` 指向 vm 实例
+						return this.message2.split('').reverse().join('')
+				    },
+					site: {
+						// getter
+						get: function () {
+							return this.name + ' ' + this.url1
+						},
+						// setter
+						set: function (newValue) {
+							var names = newValue.split(' ')
+							this.name = names[0]
+							this.url1 = names[names.length - 1]
+						}
+					}
+				},
+				watch : {
+					kilometers:function(val) {
+						this.kilometers = val;
+						this.meters = this.kilometers * 1000
+					},
+					meters : function (val) {
+						this.kilometers = val/ 1000;
+						this.meters = val;
+					}
+				}
+			})
+			// 调用 setter， vm.name 和 vm.url 也会被对应更新
+			vm.site = '菜鸟教程 http://www.runoob.com';
+			// document.write('name: ' + vm.name);
+			// document.write('<br>');
+			// document.write('url: ' + vm.url1);
+			// document.write('<hr>');
+			vm.$watch('counter', function(nval, oval) {
+			    alert('计数器值的变化 :' + oval + ' 变为 ' + nval + '!');
+			 });
+			// $watch 是一个实例方法
+			vm.$watch('kilometers', function (newValue, oldValue) {
+				// 这个回调将在 vm.kilometers 改变后调用
+				document.getElementById ("info").innerHTML = "修改前值为: " + oldValue + "，修改后值为: " + newValue;
+			})
+		</script>
+	</body>
+</html>
+
