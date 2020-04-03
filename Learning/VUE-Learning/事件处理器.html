@@ -24,9 +24,10 @@
 			<button v-on:click="say('hi')">Say hi</button>
 			<button v-on:click="say('what')">Say what</button>
 			<hr />
-			
+
 			<h1>Vue.js 表单</h1>
-			<img src="./img/QQ截图20200403150438.png" class="active"/>
+			<img src="./img/QQ截图20200403150438.png" class="active" />
+
 			<h3>输入框</h3>
 			<h4>input 元素：</h4>
 			<input v-model="message" placeholder="编辑我……">
@@ -34,32 +35,70 @@
 			<h4>textarea 元素：</h4>
 			<p style="white-space: pre">{{ message2 }}</p>
 			<textarea v-model="message2" placeholder="多行文本输入……"></textarea>
+
+			<h3>复选框</h3>
+			<h4>单个复选框</h4>
+			<input type="checkbox" id="checkbox" v-model="checked">
+			<label for="checkbox">{{ checked }}</label>
+			<h4>多个复选框</h4>
+			<input type="checkbox" id="runoob" value="Runoob" v-model="checkedNames">
+			<label for="runoob">Runoob</label>
+			<input type="checkbox" id="google" value="Google" v-model="checkedNames">
+			<label for="google">Google</label>
+			<input type="checkbox" id="taobao" value="Taobao" v-model="checkedNames">
+			<label for="taobao">taobao</label>
+			<br>
+			<span>选择的值为: {{ checkedNames }}</span>
+
+			<h3>单选按钮</h3>
+			<input type="radio" id="runoob" value="Runoob" v-model="picked">
+			<label for="runoob">Runoob</label>
+			<br>
+			<input type="radio" id="google" value="Google" v-model="picked">
+			<label for="google">Google</label>
+			<br>
+			<span>选中值为: {{ picked }}</span>
+
+			<h3>select 列表</h3>
+			<select v-model="selected" name="fruit">
+				<option value="">选择一个网站</option>
+				<option value="www.runoob.com">Runoob</option>
+				<option value="www.google.com">Google</option>
+			</select>
+
+			<div id="output">
+				选择的网站是: {{selected}}
+			</div>
 		</div>
-		
+
 		<script>
-		new Vue({
-			el: '#app',
-			data: {
-				counter: 0,
-				name: 'Vue.js',
-				message: 'Runoob',
-				message2: '菜鸟教程\r\nhttp://www.runoob.com'
-			},
-			// 在 `methods` 对象中定义方法
-			methods: {
-			    greet: function (event) {
-					// `this` 在方法里指当前 Vue 实例
-					alert('Hello ' + this.name + '!')
-					// `event` 是原生 DOM 事件
-					if (event) {
-						alert(event.target.tagName)
+			new Vue({
+				el: '#app',
+				data: {
+					counter: 0,
+					name: 'Vue.js',
+					message: 'Runoob',
+					message2: '菜鸟教程\r\nhttp://www.runoob.com',
+					checked: false,
+					checkedNames: [],
+					picked: 'Runoob',
+					selected: '' 
+				},
+				// 在 `methods` 对象中定义方法
+				methods: {
+					greet: function(event) {
+						// `this` 在方法里指当前 Vue 实例
+						alert('Hello ' + this.name + '!')
+						// `event` 是原生 DOM 事件
+						if (event) {
+							alert(event.target.tagName)
+						}
+					},
+					say: function(message) {
+						alert(message)
 					}
-			    },
-				say: function (message) {
-					alert(message)
 				}
-			}
-		})
+			})
 		</script>
 	</body>
 </html>
