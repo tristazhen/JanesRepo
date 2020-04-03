@@ -32,18 +32,65 @@
 			</div>
 			<br />
 			<div v-bind:class="classObject"></div>
+			<h4>数组语法</h4>
+			<p>把一个数组传给 v-bind:class </p>
+			<div v-bind:class="[activeClass, errorClass]"></div>
+			<br />
+			<p>使用三元表达式来切换列表中的 class </p>
+			<div v-bind:class="[errorClass ,isActive ? activeClass : '']"></div>
+			<hr />
+			<h3>Vue.js style(内联样式)</h3>
+			<div style="color: green; font-size: 30px;">菜鸟教程</div>
+			<p>在 v-bind:style 直接设置样式:</p>
+			<div v-bind:style="{ color: activeColor, fontSize: fontSize + 'px' }">菜鸟教程</div>
+			<p>直接绑定到一个样式对象，让模板更清晰:</p>
+			<div v-bind:style="styleObject">菜鸟教程</div>
+			<p>使用数组将多个样式对象应用到一个元素上：</p>
+			<div v-bind:style="[baseStyles, overridingStyles]">菜鸟教程</div>
 		</div>
+		
+		
+		
+		
 		
 		<script>
 			new Vue({
 				el: '#app',
 				data: {
+					activeColor: 'green',
+					fontSize: 30,
 					isActive: true,
 					hasError: true,
+					activeClass: 'active',
+					errorClass: 'text-danger',
+					styleObject: {
+						color: 'green',
+						fontSize: '30px'
+					},
 					classObject: {
 						active: true,
 						'text-danger': true
+					},
+					error: {
+						value: true,
+						type: 'fatal'
+					},
+					baseStyles: {
+						color: 'green',
+						fontSize: '30px'
+					},
+					overridingStyles: {
+						'font-weight': 'bold'
 					}
+				},
+				computed: {
+				    classObject: function () {
+				      return {
+						base: true,
+				        active: this.isActive && !this.error.value,
+				        'text-danger': this.error.value && this.error.type === 'fatal',
+				      }
+				    }
 				}
 			})
 		</script>
