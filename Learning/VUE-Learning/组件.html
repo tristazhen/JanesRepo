@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<script src="./js/vue.js"></script>
+	</head>
+	<body>
+		<h1>Vue.js 组件</h1>
+		<img src="./img/QQ截图20200403165043.png" class="active" />
+
+		<div id="app">
+			<p>注册一个简单的全局组件 runoob，并使用它：</p>
+			<runoob></runoob>
+			<p>在实例选项中注册局部组件，这样组件只能在这个实例中使用：</p>
+			<runoob1></runoob1>
+		</div>
+
+		<script>
+			// 注册
+			Vue.component('runoob', {
+				template: '<h3>全局组件!</h3>'
+			})
+			var Child = {
+				template: '<h3>局部组件!</h3>'
+			}
+			// 创建根实例
+			new Vue({
+				el: '#app',
+				components: {
+					// <runoob1> 将只在父模板可用
+					'runoob1': Child
+				}
+			})
+		</script>
+	</body>
+</html>
