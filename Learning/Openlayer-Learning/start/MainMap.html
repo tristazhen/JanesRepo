@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>OpenLayers example</title>
+		<link rel="stylesheet" href="../OLv6.3.1/css/ol.css" type="text/css">
+		<script src="../OLv6.3.1/build/ol.js"></script>
+		<style>
+			.map {
+				height: 800px;
+				width: 100%;
+			}
+			/* zoom图层控制 */
+			#map .ol-zoom .ol-zoom-out {
+				margin-top: 204px;
+			}
+			#map .ol-zoomslider {
+				background-color: transparent;
+				top: 2.3em;
+			}
+			#map .ol-zoom-extent {
+				top: 280px;
+			}
+			//自定义的样式
+			#map .ol-full-screen {
+				top: auto !important;
+				bottom: .5em;
+			}
+			#map .ol-mouse-position {
+				top: auto !important;
+				bottom: .5em;
+			}
+			#map .ol-overviewmap {
+				bottom: 2.5em;
+			}
+			#map .ol-rotate {
+				right: 2.5em;
+			}
+		</style>
+
+
+	</head>
+	<body>
+		<h2>My Map</h2>
+		<div id="map" class="map"></div>
+		<script type="text/javascript">
+			var map = new ol.Map({
+				target: 'map',
+				layers: [
+					new ol.layer.Tile({
+						source: new ol.source.OSM()
+					})
+				],
+
+
+				// 地图视图
+				// view: new ol.View({
+				// 	projection: 'EPSG:3857',
+				// 	center: [0, 0],
+				// 	zoom: 0
+				// }),
+				view: new ol.View({
+					center: ol.proj.fromLonLat([37.41, 8.82]),
+					zoom: 4
+				}),
+				//图层控制
+				controls: ol.control.defaults({
+					//隐藏归属信息
+					attribution: false
+				}).extend([
+					// 往地图增加滑块缩放控件zoom
+					new ol.control.ZoomSlider(),
+					// 缩放至特定位置控件
+					new ol.control.ZoomToExtent({
+						extent: [
+							12667718, 2562800, //左下
+							12718359, 2597725 //右上
+						]
+					}),
+					// 全屏--增加全屏控件
+					new ol.control.FullScreen(),
+					// 坐标拾取--实例化坐标拾取控件，并加入地图
+					new ol.control.MousePosition(),
+					// 鹰眼--实例化一个OverviewMap类的对象，并加入到地图中（其他定制化可搜自定义鹰眼）
+					new ol.control.OverviewMap({
+						//collapsed: false     //默认展开
+					}),
+					// 实例化一个ScaleLine类的实例并加入到地图
+					new ol.control.ScaleLine()
+
+				])
+
+			});
+		</script>
+	</body>
+</html>
