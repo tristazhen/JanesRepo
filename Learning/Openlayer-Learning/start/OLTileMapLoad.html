@@ -7,6 +7,8 @@
 		<title>OpenLayers example</title>
 		<link rel="stylesheet" href="../OLv6.3.1/css/ol.css" type="text/css">
 		<script src="../OLv6.3.1/build/ol.js"></script>
+		<!-- <link rel="stylesheet" href="../OLv5.3.0/css/ol.css" type="text/css">
+		<script src="../OLv5.3.0/build/ol.js"></script> -->
 		<style>
 			.map {
 				height: 800px;
@@ -43,10 +45,10 @@
 
 	</head>
 	<body>
-		<h2>My Map</h2>
+		<h2>My Map-加载各种来源的瓦片地图</h2>
 		<div id="controls">
 			<input type="checkbox" id="osm" checked />OpenStreetMap
-			<input type="checkbox" id="osmtiledebug" checked/>OpenStreetMapTileDebug
+			<input type="checkbox" id="osmtiledebug" checked />OpenStreetMapTileDebug
 			<input type="checkbox" id="osmxyz" />OpenStreetMapXYZ
 			<br />
 			<input type="checkbox" id="bingmap" />Bing Map
@@ -57,6 +59,9 @@
 			<input type="checkbox" id="gaodexyz1" />Gaode XYZ影像底图
 			<input type="checkbox" id="gaodexyz2" />Gaode XYZ矢量底图
 			<input type="checkbox" id="gaodexyz3" />Gaode XYZ影像路网
+			<br />
+			<input type="checkbox" id="baidu" />Baidu
+			<input type="checkbox" id="google" />Google
 		</div>
 		<div id="map" class="map"></div>
 		<div><span>当前层级：</span><span id="zoom"></span><span>分辨率：</span><span id="resolution"></span></div>
@@ -134,8 +139,43 @@
 
 						}),
 						visible: false // 先隐藏该图层
-					})
+					}),
+					new ol.layer.Tile({ // 百度地图图层
+						source: new ol.source.XYZ({
+							tilePixelRatio: 2,
+							tileUrlFunction: function(tileCoord) {
+								let z = tileCoord[0];
+								let x = tileCoord[1];
+								let y = tileCoord[2];
 
+								// 计算当前层级下X或Y方向上瓦片总数的一半，用于定位整个地图的中心点
+								let halfTileNum = Math.pow(2, z - 1);
+
+								// 原点从左上角移到中心点后，计算xy方向上新的坐标位置
+								let baiduX = x - halfTileNum;
+								let baiduY = y + halfTileNum;
+
+								// 百度瓦片服务url将负数使用M前缀来标识
+								if (baiduX < 0) {
+									baiduX = 'M' + (-baiduX);
+								}
+								if (baiduY < 0) {
+									baiduY = 'M' + (-baiduY);
+								}
+
+								// 返回经过转换后，对应于百度在线瓦片的url
+								return 'http://online2.map.bdimg.com/onlinelabel/?qt=tile&x=' + baiduX + '&y=' + baiduY + '&z=' + z +
+									'&styles=pl&udt=20160321&scaler=2&p=0';
+							}
+						}),
+						visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({//Google中文地图
+						source: new ol.source.XYZ({
+							url: 'http://www.google.cn/maps/vt/pb=!1m4!1m3!1i{z}!2i{x}!3i{y}!2m3!1e0!2sm!3i345013117!3m8!2szh-CN!3scn!5e1105!12m4!1e68!2m2!1sset!2sRoadmap!4e0'
+						}),
+						visible: false // 先隐藏该图层
+					})
 				],
 
 
@@ -199,7 +239,6 @@
 						case "stamen":
 							map.getLayers().item(4).setVisible(true);
 							break;
-
 						case "yahooxyz":
 							map.getLayers().item(5).setVisible(true);
 							break;
@@ -214,6 +253,11 @@
 							break;
 						case "gaodexyz3":
 							map.getLayers().item(9).setVisible(true);
+							break;
+						case "baidu":
+							map.getLayers().item(10).setVisible(true);
+						case "google":
+							map.getLayers().item(11).setVisible(true);
 							break;
 						default:
 							break;
@@ -232,7 +276,6 @@
 							map.getLayers().item(3).setVisible(false);
 						case "stamen":
 							map.getLayers().item(4).setVisible(false);
-
 						case "yahooxyz":
 							map.getLayers().item(5).setVisible(false);
 						case "gaodexyz":
@@ -243,6 +286,10 @@
 							map.getLayers().item(8).setVisible(false);
 						case "gaodexyz3":
 							map.getLayers().item(9).setVisible(false);
+						case "baidu":
+							map.getLayers().item(10).setVisible(false);
+						case "google":
+							map.getLayers().item(11).setVisible(false);
 						default:
 							break;
 					}
