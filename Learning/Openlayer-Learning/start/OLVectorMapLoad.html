@@ -4,11 +4,11 @@
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta http-equiv="X-UA-Compatible" content="ie=edge">
-		<title>OpenLayers example</title>
-		<link rel="stylesheet" href="../OLv6.3.1/css/ol.css" type="text/css">
-		<script src="../OLv6.3.1/build/ol.js"></script>
-		<!-- <link rel="stylesheet" href="../OLv5.3.0/css/ol.css" type="text/css">
-		<script src="../OLv5.3.0/build/ol.js"></script> -->
+		<title>矢量地图加载</title>
+		<!-- <link rel="stylesheet" href="../OLv6.3.1/css/ol.css" type="text/css">
+		<script src="../OLv6.3.1/build/ol.js"></script> -->
+		<link rel="stylesheet" href="../OLv5.3.0/css/ol.css" type="text/css">
+		<script src="../OLv5.3.0/build/ol.js"></script>
 		<style>
 			.map {
 				height: 800px;
@@ -47,23 +47,93 @@
 	<body>
 		<h2>My Map-加载矢量地图</h2>
 		<div id="controls">
-			<input type="checkbox" id="osm" checked />OpenStreetMap
+			<input type="checkbox" id="osm" checked />OSM底图
+			<input type="checkbox" id="directOrganizeVector" />直接组织矢量
+			<input type="checkbox" id="importVector_url" />url加载矢量
+			<input type="checkbox" id="customStyle" />带样式矢量
 		</div>
 		<div id="map" class="map"></div>
 		<div><span>当前层级：</span><span id="zoom"></span><span>分辨率：</span><span id="resolution"></span></div>
 		<script type="text/javascript">
+			// 初始化一个点要素
+			let pointFeature = new ol.Feature({
+				geometry: new ol.geom.Point([12958998, 4852221]), // 空间信息
+				name: '点要素' // 属性信息
+			});
+
+			// 初始化一个线要素
+			let lineFeature = new ol.Feature({
+				// 空间信息
+				geometry: new ol.geom.LineString([
+					[11590147, 4322577],
+					[13594369, 3872784]
+				]),
+				name: '线要素' // 属性信息
+			});
+
+			// 初始化一个多边形要素
+			let polygonFeature = new ol.Feature({
+				// 空间信息
+				geometry: new ol.geom.Polygon([
+					[
+						[11801814, 3251012],
+						[14057391, 2748303],
+						[12714628, 1346008],
+						[11801814, 3251012]
+					]
+				]),
+				name: '多边形要素' // 属性信息
+			});
+
+			// 初始化一个矢量数据源, 并添加上面创建的要素
+			let vectorSource = new ol.source.Vector();
+			vectorSource.addFeature(pointFeature);
+			vectorSource.addFeature(lineFeature);
+			vectorSource.addFeature(polygonFeature);
+
+			// 初始化一个矢量图层
+			let vectorLayer = new ol.layer.Vector({
+				source: vectorSource,
+				visible: false // 先隐藏该图层
+			});
+
 			var map = new ol.Map({
 				target: 'map',
 				layers: [
-					new ol.layer.Tile({ // OpenStreetMap图层
+					// OpenStreetMap图层
+					new ol.layer.Tile({
 						source: new ol.source.OSM()
+					}),
+					//直接组织矢量数据
+					vectorLayer,
+					// 再加载一个geojson的矢量地图
+					new ol.layer.Vector({
+						source: new ol.source.Vector({
+							url: '../data/geojson/line-samples.geojson', // 矢量数据来源
+							format: new ol.format.GeoJSON() // 解析矢量数据的解析器
+						}),
+						visible: false // 先隐藏该图层
+					}),
+					// 再加载一个geojson的矢量地图
+					new ol.layer.Vector({
+						source: new ol.source.Vector({
+							url: '../data/geojson/line-samples.geojson', // 矢量数据来源
+							format: new ol.format.GeoJSON() // 解析矢量数据的解析器
+						}),
+						style: new ol.style.Style({ // 自定义矢量地图样式
+							stroke: new ol.style.Stroke({
+								color: 'red',
+								width: 5
+							})
+						}),
+						visible: false // 先隐藏该图层
 					})
 				],
 				view: new ol.View({
-					center: ol.proj.fromLonLat([37.41, 8.82]),
+					center: ol.proj.fromLonLat([105.02, 36.12]),
 					zoom: 4
 				}),
-				
+
 				//图层控制
 				controls: ol.control.defaults({
 					//隐藏归属信息
@@ -74,8 +144,10 @@
 					// 缩放至特定位置控件
 					new ol.control.ZoomToExtent({
 						extent: [
-							12667718, 2562800, //左下
-							12718359, 2597725 //右上
+							13500873.417092249, 4490275.352795991, //左下
+							13549793.11519476, 4520850.164110062   //右上
+							// 12667718, 2562800, 
+							// 12718359, 2597725 
 						]
 					}),
 					// 全屏--增加全屏控件
@@ -102,6 +174,15 @@
 						case "osm":
 							map.getLayers().item(0).setVisible(true);
 							break;
+						case "directOrganizeVector":
+							map.getLayers().item(1).setVisible(true);
+							break;
+						case "importVector_url":
+							map.getLayers().item(2).setVisible(true);
+							break;
+						case "customStyle":
+							map.getLayers().item(3).setVisible(true);
+							break;
 						default:
 							break;
 					}
@@ -110,6 +191,15 @@
 					switch (event.target.id) {
 						case "osm":
 							map.getLayers().item(0).setVisible(false);
+							break;
+						case "directOrganizeVector":
+							map.getLayers().item(1).setVisible(false);
+							break;
+						case "importVector_url":
+							map.getLayers().item(2).setVisible(false);
+							break;
+						case "customStyle":
+							map.getLayers().item(3).setVisible(false);
 							break;
 						default:
 							break;
