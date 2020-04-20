@@ -66,6 +66,17 @@
 		<div id="map" class="map"></div>
 		<div><span>当前层级：</span><span id="zoom"></span><span>分辨率：</span><span id="resolution"></span></div>
 		<script type="text/javascript">
+			
+			//百度地图相关
+			// 自定义分辨率和瓦片坐标系
+			var resolutions = [];
+			var maxZoom = 18;
+			 
+			// 计算百度使用的分辨率
+			for(var i=0; i<=maxZoom; i++){
+			    resolutions[i] = Math.pow(2, maxZoom-i);
+			}
+			
 			let osmSource = new ol.source.OSM();
 			var map = new ol.Map({
 				target: 'map',
@@ -143,34 +154,56 @@
 					new ol.layer.Tile({ // 百度地图图层
 						source: new ol.source.XYZ({
 							tilePixelRatio: 2,
+							tileGrid: new ol.tilegrid.TileGrid({
+								origin: [0, 0], // 将原点设置成和百度瓦片坐标系一致
+								resolutions: resolutions // 设置分辨率
+							}),
 							tileUrlFunction: function(tileCoord) {
 								let z = tileCoord[0];
 								let x = tileCoord[1];
 								let y = tileCoord[2];
 
-								// 计算当前层级下X或Y方向上瓦片总数的一半，用于定位整个地图的中心点
-								let halfTileNum = Math.pow(2, z - 1);
-
-								// 原点从左上角移到中心点后，计算xy方向上新的坐标位置
-								let baiduX = x - halfTileNum;
-								let baiduY = y + halfTileNum;
-
 								// 百度瓦片服务url将负数使用M前缀来标识
-								if (baiduX < 0) {
-									baiduX = 'M' + (-baiduX);
+								if (x < 0) {
+									x = 'M' + (-x);
 								}
-								if (baiduY < 0) {
-									baiduY = 'M' + (-baiduY);
+								if (y < 0) {
+									y = 'M' + (-y);
 								}
 
 								// 返回经过转换后，对应于百度在线瓦片的url
-								return 'http://online2.map.bdimg.com/onlinelabel/?qt=tile&x=' + baiduX + '&y=' + baiduY + '&z=' + z +
+								return 'http://online2.map.bdimg.com/onlinelabel/?qt=tile&x=' + x + '&y=' + y + '&z=' + z +
 									'&styles=pl&udt=20160321&scaler=2&p=0';
 							}
+							// tilePixelRatio: 2,
+							// tileUrlFunction: function(tileCoord) {
+							// 	let z = tileCoord[0];
+							// 	let x = tileCoord[1];
+							// 	let y = tileCoord[2];
+
+							// 	// 计算当前层级下X或Y方向上瓦片总数的一半，用于定位整个地图的中心点
+							// 	let halfTileNum = Math.pow(2, z - 1);
+
+							// 	// 原点从左上角移到中心点后，计算xy方向上新的坐标位置
+							// 	let baiduX = x - halfTileNum;
+							// 	let baiduY = y + halfTileNum;
+
+							// 	// 百度瓦片服务url将负数使用M前缀来标识
+							// 	if (baiduX < 0) {
+							// 		baiduX = 'M' + (-baiduX);
+							// 	}
+							// 	if (baiduY < 0) {
+							// 		baiduY = 'M' + (-baiduY);
+							// 	}
+
+							// 	// 返回经过转换后，对应于百度在线瓦片的url
+							// 	return 'http://online2.map.bdimg.com/onlinelabel/?qt=tile&x=' + baiduX + '&y=' + baiduY + '&z=' + z +
+							// 		'&styles=pl&udt=20160321&scaler=2&p=0';
+							// }
 						}),
 						visible: false // 先隐藏该图层
 					}),
-					new ol.layer.Tile({//Google中文地图
+					new ol.layer.Tile({ //Google中文地图
 						source: new ol.source.XYZ({
 							url: 'http://www.google.cn/maps/vt/pb=!1m4!1m3!1i{z}!2i{x}!3i{y}!2m3!1e0!2sm!3i345013117!3m8!2szh-CN!3scn!5e1105!12m4!1e68!2m2!1sset!2sRoadmap!4e0'
 						}),
@@ -200,7 +233,7 @@
 					new ol.control.ZoomToExtent({
 						extent: [
 							13500873.417092249, 4490275.352795991, //左下
-							13549793.11519476, 4520850.164110062   //右上
+							13549793.11519476, 4520850.164110062 //右上
 						]
 					}),
 					// 全屏--增加全屏控件

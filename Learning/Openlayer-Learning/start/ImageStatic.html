@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>静态地图</title>
+		<link rel="stylesheet" href="../OLv5.3.0/css/ol.css" type="text/css">
+		<script src="../OLv5.3.0/build/ol.js"></script>
+		<style>
+			.map {
+				height: 600px;
+				width: 100%;
+			}
+
+			.map2 {
+				height: 600px;
+				width: 100%;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="map" class="map"></div>
+		<div id="map2" class="map2"></div>
+		<script>
+			//地图设置中心，设置到成都，在本地离线地图offlineMapTiles刚好有一张zoom为4的成都瓦片
+			var center = ol.proj.transform([104.06667, 30.66667], 'EPSG:4326', 'EPSG:3857');
+			//计算熊猫基地地图映射到地图上的范围，图片像素为550*344，保持比例的情况下，把分辨率放大一些
+			var extent = [
+				center[0] - 550 * 1000 / 2,
+				center[1] - 344 * 1000 / 2,
+				center[0] + 550 * 1000 / 2,
+				center[1] + 344 * 1000 / 2
+			];
+			//创建地图
+			var map = new ol.Map({
+				target: 'map',
+				view: new ol.View({
+					center: center,
+					zoom: 7
+				})
+			});
+			//加载熊猫基地静态图层
+			map.addLayer(new ol.layer.Image({
+				source: new ol.source.ImageStatic({
+					url: '../data/ImageStatic.png', // 熊猫基地地图
+					imageExtent: extent //映射到地图的范围
+				})
+			}));
+
+
+
+			// 地图设置中心，设置到成都，在本地离线地图 offlineMapTiles刚好有一张zoom为4的成都瓦片
+			var center2 = ol.proj.transform([104.06667, 30.66667], 'EPSG:4326', 'EPSG:3857');
+			// 计算熊猫基地地图映射到地图上的范围，图片像素为 550*344，保持比例的情况下，把分辨率放大一些
+			var extent2 = [
+				center2[0] - 550 * 1000 / 2,
+				center2[1] - 344 * 1000 / 2,
+				center2[0] + 550 * 1000 / 2,
+				center2[1] + 344 * 1000 / 2
+			];
+			//创建地图
+			var map2 = new ol.Map({
+				view: new ol.View({
+					center: center2,
+					zoom: 7
+				}),
+				target: 'map2'
+			});
+			//加载熊猫基地静态地图层
+			map2.addLayer(new ol.layer.Image({
+				source: new ol.source.ImageStatic({
+					url: '../data/ImageStatic.png', //熊猫基地地图
+					imageExtent: extent2 //映射到地图的范围
+				})
+			}));
+			//创建一个用于放置活动图标的layer
+			var activityLayer = new ol.layer.Vector({
+				source: new ol.source.Vector()
+			});
+			//创建一个活动图标需要的Feature，并设置位置
+			var activity = new ol.Feature({
+				geometry: new ol.geom.Point([center2[0] - 550 * 1000 / 2 + 390 * 1000, center2[1] - 344 * 1000 / 2 + (344 - 145) *
+					1000
+				])
+			});
+			//设置Feature的样式，使用小旗帜图标
+			activity.setStyle(new ol.style.Style({
+				image: new ol.style.Icon({
+					src: '../data/icon.png',
+					anchor: [0, 1],
+					scale: 0.2
+				})
+			}));
+			//添加活动Feature到layer上，并把layer添加到地图中
+			activityLayer.getSource().addFeature(activity);
+			map2.addLayer(activityLayer);
+		</script>
+	</body>
+</html>
