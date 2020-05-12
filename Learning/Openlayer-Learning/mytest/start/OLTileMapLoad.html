@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta http-equiv="X-UA-Compatible" content="ie=edge">
+		<title>瓦片加载实例</title>
+		<!-- <link rel="stylesheet" href="../OLv6.3.1/css/ol.css" type="text/css">
+		<script src="../OLv6.3.1/build/ol.js"></script> -->
+		<link rel="stylesheet" href="../OpenLayer/css/ol.css" type="text/css">
+		<script src="../OpenLayer/build/ol.js"></script>
+		<style>
+			.map {
+				height: 800px;
+				width: 100%;
+			}
+			/* zoom图层控制 */
+			#map .ol-zoom .ol-zoom-out {
+				margin-top: 204px;
+			}
+			#map .ol-zoomslider {
+				background-color: transparent;
+				top: 2.3em;
+			}
+			#map .ol-zoom-extent {
+				top: 280px;
+			}
+			//自定义的样式
+			#map .ol-full-screen {
+				top: auto !important;
+				bottom: .5em;
+			}
+			#map .ol-mouse-position {
+				top: auto !important;
+				bottom: .5em;
+			}
+			#map .ol-overviewmap {
+				bottom: 2.5em;
+			}
+			#map .ol-rotate {
+				right: 2.5em;
+			}
+		</style>
+
+
+	</head>
+	<body>
+		<h2>My Map-加载各种来源的瓦片地图</h2>
+		<div id="controls">
+			<input type="checkbox" id="osm" checked />OpenStreetMap
+			<input type="checkbox" id="osmtiledebug" checked />OpenStreetMapTileDebug
+			<input type="checkbox" id="osmxyz" />OpenStreetMapXYZ
+			<br />
+			<input type="checkbox" id="bingmap" />Bing Map
+			<input type="checkbox" id="stamen" />Stamen Map
+			<input type="checkbox" id="yahooxyz" />Yahoo XYZ
+			<br />
+			<input type="checkbox" id="gaodexyz" />Gaode XYZ
+			<input type="checkbox" id="gaodexyz1" />Gaode XYZ影像底图
+			<input type="checkbox" id="gaodexyz2" />Gaode XYZ矢量底图
+			<input type="checkbox" id="gaodexyz3" />Gaode XYZ影像路网
+			<br />
+			<input type="checkbox" id="baidu" />Baidu
+			<input type="checkbox" id="google" />Google
+		</div>
+		<div id="map" class="map"></div>
+		<div><span>当前层级：</span><span id="zoom"></span><span>分辨率：</span><span id="resolution"></span></div>
+		<script type="text/javascript">
+			
+			//百度地图相关
+			// 自定义分辨率和瓦片坐标系
+			var resolutions = [];
+			var maxZoom = 18;
+			 
+			// 计算百度使用的分辨率
+			for(var i=0; i<=maxZoom; i++){
+			    resolutions[i] = Math.pow(2, maxZoom-i);
+			}
+			
+			let osmSource = new ol.source.OSM();
+			var map = new ol.Map({
+				target: 'map',
+				layers: [
+					new ol.layer.Tile({ // OpenStreetMap图层
+						source: osmSource
+					}),
+					// 添加一个显示OSM地图的瓦片网格的图层
+					new ol.layer.Tile({
+						source: new ol.source.TileDebug({
+							projection: 'EPSG:3857', // Web墨卡托投影坐标系
+							tileGrid: osmSource.getTileGrid() // 获取OSM地图的瓦片坐标系
+						}),
+						// visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({ // 使用XYZ的方式加载OpenStreetMap
+						source: new ol.source.XYZ({
+							url: 'http://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+						}),
+						visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({ // Bing Map图层
+						source: new ol.source.BingMaps({
+							key: 'AktRwz58F4poZNGJ9Y69G2WnbOKIsckPaL19qBlQ0ajBxPILuWaLtcphiaDztwnh', // 可以自行到Bing Map官网申请key
+							imagerySet: 'Aerial'
+						}),
+						visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({
+						source: new ol.source.Stamen({
+							layer: 'watercolor'
+						}),
+						visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({ // 使用XYZ方式加载雅虎地图
+						source: new ol.source.XYZ({
+							url: 'https://{0-3}.base.maps.api.here.com/maptile/2.1/maptile/newest/normal.day/{z}/{x}/{y}/512/png8?lg=ENG&ppi=250&token=TrLJuXVK62IQk0vuXFzaig%3D%3D&requestid=yahoo.prod&app_id=eAdkWGYRoc4RfxVo0Z4B',
+							tileSize: 512 // 设置对应的瓦片大小
+						}),
+						visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({ // 使用XYZ方式加载高德地图
+						source: new ol.source.XYZ({
+							url: 'http://webst0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}',
+							// http://wprd0{1-4}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=7 为矢量图（含路网、含注记）
+							// http://wprd0{1-4}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=2&style=7 为矢量图（含路网，不含注记）
+							// http://wprd0{1-4}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=6 为影像底图（不含路网，不含注记）
+							// http://wprd0{1-4}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=2&style=6 为影像底图（不含路网、不含注记）
+							// http://wprd0{1-4}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=8 为影像路图（含路网，含注记）
+							// http://wprd0{1-4}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=2&style=8 为影像路网（含路网，不含注记）
+
+						}),
+						visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({ // 使用XYZ方式加载高德地图
+						source: new ol.source.XYZ({
+							url: 'http://wprd0{1-4}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=6'
+						}),
+						visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({ // 使用XYZ方式加载高德地图
+						source: new ol.source.XYZ({
+							url: 'http://wprd0{1-4}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=7'
+
+						}),
+						visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({ // 使用XYZ方式加载高德地图
+						source: new ol.source.XYZ({
+							url: 'http://wprd0{1-4}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=8'
+
+						}),
+						visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({ // 百度地图图层
+						source: new ol.source.XYZ({
+							tilePixelRatio: 2,
+							tileGrid: new ol.tilegrid.TileGrid({
+								origin: [0, 0], // 将原点设置成和百度瓦片坐标系一致
+								resolutions: resolutions // 设置分辨率
+							}),
+							tileUrlFunction: function(tileCoord) {
+								let z = tileCoord[0];
+								let x = tileCoord[1];
+								let y = tileCoord[2];
+
+								// 百度瓦片服务url将负数使用M前缀来标识
+								if (x < 0) {
+									x = 'M' + (-x);
+								}
+								if (y < 0) {
+									y = 'M' + (-y);
+								}
+
+								// 返回经过转换后，对应于百度在线瓦片的url
+								return 'http://online2.map.bdimg.com/onlinelabel/?qt=tile&x=' + x + '&y=' + y + '&z=' + z +
+									'&styles=pl&udt=20160321&scaler=2&p=0';
+							}
+							// tilePixelRatio: 2,
+							// tileUrlFunction: function(tileCoord) {
+							// 	let z = tileCoord[0];
+							// 	let x = tileCoord[1];
+							// 	let y = tileCoord[2];
+
+							// 	// 计算当前层级下X或Y方向上瓦片总数的一半，用于定位整个地图的中心点
+							// 	let halfTileNum = Math.pow(2, z - 1);
+
+							// 	// 原点从左上角移到中心点后，计算xy方向上新的坐标位置
+							// 	let baiduX = x - halfTileNum;
+							// 	let baiduY = y + halfTileNum;
+
+							// 	// 百度瓦片服务url将负数使用M前缀来标识
+							// 	if (baiduX < 0) {
+							// 		baiduX = 'M' + (-baiduX);
+							// 	}
+							// 	if (baiduY < 0) {
+							// 		baiduY = 'M' + (-baiduY);
+							// 	}
+
+							// 	// 返回经过转换后，对应于百度在线瓦片的url
+							// 	return 'http://online2.map.bdimg.com/onlinelabel/?qt=tile&x=' + baiduX + '&y=' + baiduY + '&z=' + z +
+							// 		'&styles=pl&udt=20160321&scaler=2&p=0';
+							// }
+						}),
+						visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({ //Google中文地图
+						source: new ol.source.XYZ({
+							url: 'http://www.google.cn/maps/vt/pb=!1m4!1m3!1i{z}!2i{x}!3i{y}!2m3!1e0!2sm!3i345013117!3m8!2szh-CN!3scn!5e1105!12m4!1e68!2m2!1sset!2sRoadmap!4e0'
+						}),
+						visible: false // 先隐藏该图层
+					})
+				],
+
+
+				// 地图视图
+				// view: new ol.View({
+				// 	projection: 'EPSG:3857',
+				// 	center: [0, 0],
+				// 	zoom: 0
+				// }),
+				view: new ol.View({
+					center: ol.proj.fromLonLat([105.02, 36.12]),
+					zoom: 4
+				}),
+				//图层控制
+				controls: ol.control.defaults({
+					//隐藏归属信息
+					attribution: false
+				}).extend([
+					// 往地图增加滑块缩放控件zoom
+					new ol.control.ZoomSlider(),
+					// 缩放至特定位置控件
+					new ol.control.ZoomToExtent({
+						extent: [
+							13500873.417092249, 4490275.352795991, //左下
+							13549793.11519476, 4520850.164110062 //右上
+						]
+					}),
+					// 全屏--增加全屏控件
+					new ol.control.FullScreen(),
+					// 坐标拾取--实例化坐标拾取控件，并加入地图
+					new ol.control.MousePosition(),
+					// 鹰眼--实例化一个OverviewMap类的对象，并加入到地图中（其他定制化可搜自定义鹰眼）
+					new ol.control.OverviewMap({
+						//collapsed: false     //默认展开
+					}),
+					// 实例化一个ScaleLine类的实例并加入到地图
+					new ol.control.ScaleLine()
+
+				])
+
+			});
+			//图层控制
+			var controls = document.getElementById('controls');
+			// 事件委托
+			controls.addEventListener('click', (event) => {
+				if (event.target.checked) { // 如果选中某一复选框
+					// 通过DOM元素的id值来判断应该对哪个图层进行显示
+					switch (event.target.id) {
+						case "osm":
+							map.getLayers().item(0).setVisible(true);
+							break;
+						case "osmtiledebug":
+							map.getLayers().item(1).setVisible(true);
+							break;
+						case "osmxyz":
+							map.getLayers().item(2).setVisible(true);
+							break;
+						case "bingmap":
+							map.getLayers().item(3).setVisible(true);
+							break;
+						case "stamen":
+							map.getLayers().item(4).setVisible(true);
+							break;
+						case "yahooxyz":
+							map.getLayers().item(5).setVisible(true);
+							break;
+						case "gaodexyz":
+							map.getLayers().item(6).setVisible(true);
+							break;
+						case "gaodexyz1":
+							map.getLayers().item(7).setVisible(true);
+							break;
+						case "gaodexyz2":
+							map.getLayers().item(8).setVisible(true);
+							break;
+						case "gaodexyz3":
+							map.getLayers().item(9).setVisible(true);
+							break;
+						case "baidu":
+							map.getLayers().item(10).setVisible(true);
+							break;
+						case "google":
+							map.getLayers().item(11).setVisible(true);
+							break;
+						default:
+							break;
+					}
+				} else { // 如果取消某一复选框
+					// 通过DOM元素的id值来判断应该对哪个图层进行隐藏
+					switch (event.target.id) {
+						case "osm":
+							map.getLayers().item(0).setVisible(false);
+							break;
+						case "osmtiledebug":
+							map.getLayers().item(1).setVisible(false);
+							break;
+						case "osmxyz":
+							map.getLayers().item(2).setVisible(false);
+							break;
+						case "bingmap":
+							map.getLayers().item(3).setVisible(false);
+							break;
+						case "stamen":
+							map.getLayers().item(4).setVisible(false);
+							break;
+						case "yahooxyz":
+							map.getLayers().item(5).setVisible(false);
+							break;
+						case "gaodexyz":
+							map.getLayers().item(6).setVisible(false);
+							break;
+						case "gaodexyz1":
+							map.getLayers().item(7).setVisible(false);
+							break;
+						case "gaodexyz2":
+							map.getLayers().item(8).setVisible(false);
+							break;
+						case "gaodexyz3":
+							map.getLayers().item(9).setVisible(false);
+							break;
+						case "baidu":
+							map.getLayers().item(10).setVisible(false);
+							break;
+						case "google":
+							map.getLayers().item(11).setVisible(false);
+						default:
+							break;
+					}
+				}
+			});
+			// 监听层级变化，输出当前层级和分辨率
+			map.getView().on('change:resolution', function() {
+				document.getElementById('zoom').innerHTML = this.getZoom() + '，';
+				document.getElementById('resolution').innerHTML = this.getResolution();
+			})
+
+			document.getElementById('zoom').innerHTML = map.getView().getZoom() + '，';
+			document.getElementById('resolution').innerHTML = +map.getView().getResolution();
+		</script>
+	</body>
+</html>
