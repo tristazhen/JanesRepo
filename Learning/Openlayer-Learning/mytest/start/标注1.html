@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>使用加载矢量点要素实现标注</title>
+    <link rel="stylesheet" href="../OpenLayer/css/ol.css" type="text/css">
+    <script src="../OpenLayer/build/ol.js"></script>
+</head>
+<body>
+    <div id="map"></div>
+ 
+    <script>
+        var beijing = ol.proj.fromLonLat([116.28, 39.54]);
+        var map = new ol.Map({
+            target: 'map',
+            layers: [
+                new ol.layer.Tile({
+                    source: new ol.source.OSM()
+                })
+            ],
+            view: new ol.View({
+                center: beijing,
+                zoom: 4
+            })
+        });
+ 
+        //实例化矢量点要素，通过矢量图层添加到地图容器中
+        //这样就实现了预先加载图文标注
+        var iconFeature = new ol.Feature({
+            geometry: new ol.geom.Point(beijing),
+            name: '北京市',                         //名称属性
+            population: 2115                       //人口数（万）
+        });
+        //设置点要素样式
+        iconFeature.setStyle(createLabelStyle(iconFeature));
+        //矢量标注的数据源
+        var vectorSource = new ol.source.Vector({
+            features: [iconFeature]
+        });
+        //矢量标注图层
+        var vectorLayer = new ol.layer.Vector({
+            source: vectorSource
+        });
+        map.addLayer(vectorLayer);
+ 
+        //矢量标注样式设置函数，设置image为图标ol.style.Icon
+        function createLabelStyle(feature){
+            console.log(feature);
+            return new ol.style.Style({
+                image: new ol.style.Icon({
+                    anchor: [0.5, 60],              //锚点
+                    anchorOrigin:'top-right',       //锚点源
+                    anchorXUnits: 'fraction',       //锚点X值单位
+                    anchorYUnits: 'pixels',         //锚点Y值单位
+                    offsetOrigin: 'top-right',      //偏移原点
+                    opacity: 0.75,
+                    src: '../images/label/定位2.png'  //图标的URL
+                }),
+                text: new ol.style.Text({
+                    textAlign: 'center',            //位置
+                    textBaseline: 'middle',         //基准线
+                    font: 'normal 14px 微软雅黑',    //文字样式
+                    text: feature.get('name'),      //文本内容
+                    fill: new ol.style.Fill({       //文本填充样式（即文字颜色)
+                        color: '#000'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: '#F00', 
+                        width: 2
+                    })
+                })
+            });
+        }
+ 
+        map.on('click', function(evt){
+            var coordinate = evt.coordinate;        //鼠标单击点的坐标
+            //新建一个要素ol.Feature
+            var newFeature = new ol.Feature({
+                geometry: new ol.geom.Point(coordinate),  //几何信息
+                name: '标注点'
+            });
+            newFeature.setStyle(createLabelStyle(newFeature));      //设置要素样式
+            vectorSource.addFeature(newFeature);
+        });
+    </script>
+</body>

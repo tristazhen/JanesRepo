@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Box Selection</title>
+    <link rel="stylesheet" href="../OpenLayer/css/ol.css" type="text/css">
+    <script src="../OpenLayer/build/ol.js"></script>
+    <style>
+      .ol-dragbox {
+        background-color: rgba(255,255,255,0.4);
+        border-color: rgba(100,150,0,1);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map" class="map"></div>
+    <div id="info">No Features selected</div>
+    <script>
+      //加载GeoJson格式的矢量数据
+	     var vectorSource = new ol.source.Vector({
+			url: '../data/geojson/countries.geojson',
+			format: new ol.format.GeoJSON()
+		});
+		var url = 'http://localhost:6080/arcgis/services/开发区管线健康档案云/test/MapServer/WMSServer';
+		var wmsSource = new ol.source.TileWMS({
+		  params: {
+		  	'LAYERS':'0,1,2',
+		  	'TILED':false 
+		  },
+		  url: url,
+		  projection: 'EPSG:3857',
+		  // serverType:'mapserver'
+		});
+      // WMS瓦片图层
+      var wmsLayer = new ol.layer.Tile({
+        source: wmsSource
+      });
+ 
+ 
+      var map = new ol.Map({
+        layers: [
+          new ol.layer.Tile({
+            source: new ol.source.OSM()
+          }),
+		  wmsLayer
+          // new ol.layer.Vector({
+          //             source: vectorSource
+          //           })
+
+        ],
+        target: 'map',
+        view: new ol.View({
+          center: ol.proj.fromLonLat([121.06, 37.68]),
+          zoom: 11
+        })
+      });
+ 
+      //创建选择交互控件
+      var select = new ol.interaction.Select();
+      map.addInteraction(select);
+ 
+      //获取所有选择的要素
+      var selectedFeatures = select.getFeatures();
+ 
+      //创建DragBox交互控件
+      var dragBox = new ol.interaction.DragBox({
+         //ol.events.condition.platformModifierKeyOnly
+         //Return true if only the platform-modifier-key (the meta-key on Mac, ctrl-key otherwise) is pressed,
+         //如果只按下platform-modifier-key（Mac平台是meta-key，其他平台是ctrl-key）则返回true
+         //false otherwise
+         //其他都返回false
+        condition: ol.events.condition.platformModifierKeyOnly
+      });
+ 
+      map.addInteraction(dragBox);
+ 
+      dragBox.on('boxend', function(evt) {
+        //获取当前绘制的范围
+        var extent = dragBox.getGeometry().getExtent();
+        document.getElementById('info').innerHTML = '';
+        var viewResolution = /** @type {number} */ (map.getView().getResolution());
+        var params = {
+        	 REQUEST: "GetFeatureInfo",
+        	 EXCEPTIONS: "application/vnd.ogc.se_xml",
+        	 // BBOX: map.getExtent().toBBOX(),
+			 BBOX: extent,
+        	 SERVICE: "WMS",
+        	 VERSION: "1.3.0",
+        	 // X: e.xy.x,
+        	 // Y: e.xy.y,
+             INFO_FORMAT: 'text/html',  //这里必须注意啦 查询结果会返回不同的格式滴，根据自己的需呀要做不同设置哦，text/html或者application/vnd.ogc.gml
+        	 // INFO_FORMAT: 'application/vnd.ogc.gml',  
+        	 // QUERY_LAYERS: map.layers[1].params.LAYERS,
+        	 FEATURE_COUNT: 50,
+        	 // Layers: 'mine:locatorinfo_'+MineCode,
+        	 // WIDTH: map.size.w,
+        	 // HEIGHT: map.size.h,
+			 // WIDTH: map.getSize()[0],
+			 // HEIGHT: map.getSize()[1],
+        	 // format: format,
+        	 // styles: map.layers[1].params.STYLES,
+        	 // srs: map.layers[1].params.SRS,
+        };
+		var url = wmsSource.getGetFeatureInfoUrl(
+            evt.coordinate, viewResolution, 'EPSG:3857',
+            params);
+        if (url) {
+          document.getElementById('info').innerHTML =
+              '<iframe seamless src="' + url + '"></iframe>';
+        }
+
+      });
+ 
+      //每次绘制之前清除selectedFeatures中的所有要素
+      dragBox.on('boxstart', function() {
+        selectedFeatures.clear();
+      });
+ 
+      var infoBox = document.getElementById('info');
+ 
+       selectedFeatures.on(['add', 'remove'], function() {
+        //遍历selectedFeatures中的每一个要素，并返回每一个要素的名称
+       var names = selectedFeatures.getArray().map(function(feature) {
+          return feature.get('name');
+        });
+        //如果names数组的长度大于0，则把它用逗号分隔添加到id为info的DIV标签中
+       if (names.length > 0) {
+          infoBox.innerHTML = names.join(', ');
+        } else {
+          infoBox.innerHTML = 'No countries selected';
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -45,53 +45,143 @@
 	<body>
 		<h2>My Map-加载矢量地图</h2>
 		<div id="controls">
-			<input type="checkbox" id="osm" checked />OSM底图
-			<input type="checkbox" id="singleImageWMS" checked />singleImageWMS
-			<input type="checkbox" id="tiledWMS" />tiledWMS
+			<input type="checkbox" id="osm" />OSM底图
+			<input type="checkbox" id="baidu" />Baidu
+			<input type="checkbox" id="tdtlw" checked />天地图路网
+			<input type="checkbox" id="gaodexyz1"  />Gaode XYZ影像底图
+			<input type="checkbox" id="gaodexyz2" />Gaode XYZ矢量底图
+			<input type="checkbox" id="gaodexyz3" />Gaode XYZ影像路网
+			<input type="checkbox" id="KFQJCDX" checked />开发区基础地形
+			<input type="checkbox" id="KFQGXJCPS" checked />开发区基础管线
 		</div>
 		<div id="map" class="map"></div>
-		<div><span>当前层级：</span><span id="zoom"></span><span>分辨率：</span><span id="resolution"></span></div>
+		<div>
+			<span>当前层级：</span><span id="zoom"></span><span>分辨率：</span><span id="resolution"></span>
+			
+			<form style="float:right;padding-right:10px;">
+				<label>投影</label>
+				<select id="projection">
+					<option value="EPSG:4326">EPSG:4326</option>
+					<option value="EPSG:3857">EPSG:3857</option>
+				</select>
+				<label>精度</label>
+				<input id="precision" type="number" min="0" max="12" value="4" />
+			</form>
+			<div id="mouse-position" style="float:right;padding-right:10px;"></div>
+
+		</div>
+		
 		<script type="text/javascript">
+			//百度地图相关
+			// 自定义分辨率和瓦片坐标系
+			var resolutions = [];
+			var maxZoom = 18;
+			 
+			// 计算百度使用的分辨率
+			for(var i=0; i<=maxZoom; i++){
+			    resolutions[i] = Math.pow(2, maxZoom-i);
+			}
+			
+			let osmSource = new ol.source.OSM();
+			
+			// 创建MousePosition控件
+			var mousePositionControl = new ol.control.MousePosition({   
+			    coordinateFormat: ol.coordinate.createStringXY(4),      // 将坐标保留4位小数位，并转换为字符串
+			    projection: 'EPSG:4326',                                // 定义投影
+			    className: 'custom-mouse-position',                     // 控件的CSS类名
+			    target: document.getElementById('mouse-position'),      // 将控件渲染在该DOM元素中
+			    undefinedHTML: '&nbsp;'                                 // 鼠标离开地图时，显示空格
+			});
+			
 			// 创建地图
 			let map = new ol.Map({
 				target: 'map',
 				layers: [
 					new ol.layer.Tile({ // 底图
-						source: new ol.source.OSM()
+						source: new ol.source.OSM(),
+						visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({ // 百度地图图层
+						source: new ol.source.XYZ({
+							tilePixelRatio: 2,
+							tileGrid: new ol.tilegrid.TileGrid({
+								origin: [0, 0], // 将原点设置成和百度瓦片坐标系一致
+								resolutions: resolutions // 设置分辨率
+							}),
+							tileUrlFunction: function(tileCoord) {
+								let z = tileCoord[0];
+								let x = tileCoord[1];
+								let y = tileCoord[2];
+					
+								// 百度瓦片服务url将负数使用M前缀来标识
+								if (x < 0) {
+									x = 'M' + (-x);
+								}
+								if (y < 0) {
+									y = 'M' + (-y);
+								}
+					
+								// 返回经过转换后，对应于百度在线瓦片的url
+								return 'http://online2.map.bdimg.com/onlinelabel/?qt=tile&x=' + x + '&y=' + y + '&z=' + z +
+									'&styles=pl&udt=20160321&scaler=2&p=0';
+							}
+							
+						}),
+						visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({
+					  source: new ol.source.XYZ({
+					    url: 'https://t0.tianditu.gov.cn/img_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=img&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=01648a46241de4244d518d8e151b3528',
+					  }),
+					  isGroup: true,
+					  name: '天地图路网'
+					  // ,
+					  // visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({ // 使用XYZ方式加载高德地图
+						source: new ol.source.XYZ({
+							url: 'http://wprd0{1-4}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=6'
+						}),
+						visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({ // 使用XYZ方式加载高德地图
+						source: new ol.source.XYZ({
+							url: 'http://wprd0{1-4}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=7'
+					
+						}),
+						visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({ // 使用XYZ方式加载高德地图
+						source: new ol.source.XYZ({
+							url: 'http://wprd0{1-4}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=8'
+					
+						}),
+						visible: false // 先隐藏该图层
 					}),
 					new ol.layer.Image({
-						source: new ol.source.ImageWMS({
-							// url: 'http://192.168.80.111:8081/geoserver/nyc/wms', // WMS服务的URL.
-							url: 'https://ahocevar.com/geoserver/wms', // WMS服务的URL.
-							// WMS请求参数
-							params: {
-								// 'LAYERS': 'nyc:nyc_roads' ,// 请求的图层名
-								'LAYERS': 'topp:states' // 请求的图层名
-							},
-							ratio: 1, // 1表示请求的图像是地图视图的大小。
-							serverType: 'geoserver' // 服务器类型
+						source: new ol.source.ImageArcGISRest({
+							ratio: 1,
+							params: {},
+							url: 'http://localhost:6080/arcgis/rest/services/开发区管线健康档案云/JCDX/MapServer'
 						})
 					}),
 					new ol.layer.Tile({
-						// 注意这里用的是TileWMS类而不是ImageWMS类
-						source: new ol.source.TileWMS({
-							// url: 'http://192.168.80.111:8081/geoserver/nyc/wms', // WMS服务的URL.
-							url: 'https://ahocevar.com/geoserver/wms', // WMS服务的URL.
-							// WMS请求参数
-							params: {
-								// 'LAYERS': 'nyc:nyc_roads' ,// 请求的图层名
-								'LAYERS': 'topp:states' // 请求的图层名
-							},
-							serverType: 'geoserver', // 服务器类型
-							transition: 5000 // 呈现不透明度转换的持续时间
-						}),
-						visible: false // 先隐藏该图层
+					  source: new ol.source.TileWMS({
+					    params: {
+					    	'LAYERS':'3,4,6,7,9,10',
+					    	'TILED':false
+					    },
+					    url: 'http://localhost:6080/arcgis/services/开发区管线健康档案云/GXJCPS/MapServer/WMSServer',
+					    projection: 'EPSG:3857',
+					    // serverType:'mapserver'
+					  })
 					})
+					
 				],
 				view: new ol.View({
 					// center: [31838945, 4975874],
-					center: ol.proj.fromLonLat([-98, 40]),
-					zoom: 4
+					center: ol.proj.fromLonLat([121.06, 37.68]),
+					zoom: 11
 				}),
 
 				//图层控制
@@ -104,8 +194,16 @@
 					// 缩放至特定位置控件
 					new ol.control.ZoomToExtent({
 						extent: [
-							13500873.417092249, 4490275.352795991, //左下
-							13549793.11519476, 4520850.164110062 //右上
+							//开发区管委
+							13495251.1486,4516331.5302,//左下
+							13497804.6231,4518228.1239//右上
+							//开发区
+							// 13435260.0247,4503961.1227,//左下
+							// 13517200.5190,4564804.9972//右上
+							//烟台市
+							//13500873.417092249, 4490275.352795991, //左下
+							//13549793.11519476, 4520850.164110062 //右上
+							//中国
 							// 12667718, 2562800, 
 							// 12718359, 2597725 
 						]
@@ -113,7 +211,7 @@
 					// 全屏--增加全屏控件
 					new ol.control.FullScreen(),
 					// 坐标拾取--实例化坐标拾取控件，并加入地图
-					new ol.control.MousePosition(),
+					mousePositionControl,
 					// 鹰眼--实例化一个OverviewMap类的对象，并加入到地图中（其他定制化可搜自定义鹰眼）
 					new ol.control.OverviewMap({
 						//collapsed: false     //默认展开
@@ -124,6 +222,21 @@
 				])
 
 			});
+			
+			var projectionSelect = document.getElementById("projection");   // 选取投影的控件
+			projectionSelect.addEventListener('change', function(event){
+				// 使mousePositionControl控件的投影与选取投影控件选取的投影一致
+				mousePositionControl.setProjection(event.target.value);    
+			});
+			
+			var precisionInput = document.getElementById('precision');
+			precisionInput.addEventListener('change', function(event){
+				// 设置mousePositionControl控件的坐标格式
+				var format = ol.coordinate.createStringXY(event.target.valueAsNumber);
+				mousePositionControl.setCoordinateFormat(format);
+			});
+			
+			
 			//图层控制
 			var controls = document.getElementById('controls');
 			// 事件委托
@@ -134,11 +247,26 @@
 						case "osm":
 							map.getLayers().item(0).setVisible(true);
 							break;
-						case "singleImageWMS":
+						case "baidu":
 							map.getLayers().item(1).setVisible(true);
 							break;
-						case "tiledWMS":
+						case "tdtlw":
 							map.getLayers().item(2).setVisible(true);
+							break;
+						case "gaodexyz1":
+							map.getLayers().item(3).setVisible(true);
+							break;
+						case "gaodexyz2":
+							map.getLayers().item(4).setVisible(true);
+							break;
+						case "gaodexyz3":
+							map.getLayers().item(5).setVisible(true);
+							break;
+						case "KFQJCDX":
+							map.getLayers().item(6).setVisible(true);
+							break;
+						case "KFQGXJCPS":
+							map.getLayers().item(7).setVisible(true);
 							break;
 						default:
 							break;
@@ -149,25 +277,43 @@
 						case "osm":
 							map.getLayers().item(0).setVisible(false);
 							break;
-						case "singleImageWMS":
+						case "baidu":
 							map.getLayers().item(1).setVisible(false);
 							break;
-						case "tiledWMS":
+						case "tdtlw":
 							map.getLayers().item(2).setVisible(false);
+							break;
+						case "gaodexyz1":
+							map.getLayers().item(3).setVisible(false);
+							break;
+						case "gaodexyz2":
+							map.getLayers().item(4).setVisible(false);
+							break;
+						case "gaodexyz3":
+							map.getLayers().item(5).setVisible(false);
+							break;
+						case "KFQJCDX":
+							map.getLayers().item(6).setVisible(false);
+							break;
+						case "KFQGXJCPS":
+							map.getLayers().item(7).setVisible(false);
 							break;
 						default:
 							break;
 					}
 				}
 			});
+			
+			
+			
 			// 监听层级变化，输出当前层级和分辨率
 			map.getView().on('change:resolution', function() {
 				document.getElementById('zoom').innerHTML = this.getZoom() + '，';
 				document.getElementById('resolution').innerHTML = this.getResolution();
-			})
-
+			});
 			document.getElementById('zoom').innerHTML = map.getView().getZoom() + '，';
 			document.getElementById('resolution').innerHTML = +map.getView().getResolution();
+			
 		</script>
 	</body>
 </html>

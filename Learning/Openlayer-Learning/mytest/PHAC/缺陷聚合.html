@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>聚合标注</title>
+    <link rel="stylesheet" href="../OpenLayer/css/ol.css" type="text/css">
+    <script src="../OpenLayer/build/ol.js"></script>
+	<style>
+		.map {
+			height: 800px;
+			width: 100%;
+		}
+		/* zoom图层控制 */
+		#map .ol-zoom .ol-zoom-out {
+			margin-top: 204px;
+		}
+		#map .ol-zoomslider {
+			background-color: transparent;
+			top: 2.3em;
+		}
+		#map .ol-zoom-extent {
+			top: 280px;
+		}
+		//自定义的样式
+		#map .ol-full-screen {
+			top: auto !important;
+			bottom: .5em;
+		}
+		#map .ol-mouse-position {
+			top: auto !important;
+			bottom: .5em;
+		}
+		#map .ol-overviewmap {
+			bottom: 2.5em;
+		}
+		#map .ol-rotate {
+			right: 2.5em;
+		}
+	</style>
+</head>
+<body>
+	<h2>地图首页</h2>
+	<div id="controls">
+		<input type="checkbox" id="osm" checked />OSM底图
+		<input type="checkbox" id="gaodexyz1"  />Gaode XYZ影像底图
+		<input type="checkbox" id="KFQJCDX" checked />开发区基础地形
+		<input type="checkbox" id="KFQQX" checked/>开发区缺陷
+		<!-- <br />
+		<input type="radio" id="addFeatures" name="cluster" />添加聚合标注
+		<input type="radio" id="removeFeatures" name="cluster" />移除聚合标注 -->
+	</div>
+	<div id="map" class="map"></div>
+	<div>
+		<span>当前层级：</span><span id="zoom"></span><span>分辨率：</span><span id="resolution"></span>
+		
+		<form style="float:right;padding-right:10px;">
+			<label>投影</label>
+			<select id="projection">
+				<option value="EPSG:4326">EPSG:4326</option>
+				<option value="EPSG:3857">EPSG:3857</option>
+			</select>
+			<label>精度</label>
+			<input id="precision" type="number" min="0" max="12" value="4" />
+		</form>
+		<div id="mouse-position" style="float:right;padding-right:10px;"></div>
+	
+	</div>
+ 
+    <script>
+		
+		let osmSource = new ol.source.OSM();
+		
+		// 创建MousePosition控件
+		var mousePositionControl = new ol.control.MousePosition({   
+		    coordinateFormat: ol.coordinate.createStringXY(4),      // 将坐标保留4位小数位，并转换为字符串
+		    projection: 'EPSG:4326',                                // 定义投影
+		    className: 'custom-mouse-position',                     // 控件的CSS类名
+		    target: document.getElementById('mouse-position'),      // 将控件渲染在该DOM元素中
+		    undefinedHTML: '&nbsp;'                                 // 鼠标离开地图时，显示空格
+		});
+		
+		
+        var map = new ol.Map({
+            target: 'map',
+            layers: [
+                new ol.layer.Tile({
+                    source: new ol.source.OSM()
+                }),
+				new ol.layer.Tile({ // 使用XYZ方式加载高德地图
+					source: new ol.source.XYZ({
+						url: 'http://wprd0{1-4}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=6'
+					}),
+					visible: false // 先隐藏该图层
+				}),
+				new ol.layer.Image({
+					source: new ol.source.ImageArcGISRest({
+						ratio: 1,
+						params: {},
+						url: 'http://localhost:6080/arcgis/rest/services/开发区管线健康档案云/JCDX/MapServer'
+					})
+				}),
+				new ol.layer.Tile({
+					source: new ol.source.TileWMS({
+						params: {
+							'LAYERS':'0',
+							'TILED':false
+						},
+						url: 'http://localhost:6080/arcgis/services/开发区管线健康档案云/QX/MapServer/WMSServer',
+						projection: 'EPSG:3857',
+						// serverType:'mapserver'
+					})
+				})
+            ],
+            view: new ol.View({
+                center: ol.proj.fromLonLat([121.06, 37.68]),
+                zoom: 11
+            }),
+			//图层控制
+			controls: ol.control.defaults({
+				//隐藏归属信息
+				attribution: false
+			}).extend([
+				// 往地图增加滑块缩放控件zoom
+				new ol.control.ZoomSlider(),
+				// 缩放至特定位置控件
+				new ol.control.ZoomToExtent({
+					extent: [
+						//开发区管委
+						13495251.1486,4516331.5302,//左下
+						13497804.6231,4518228.1239//右上
+						//开发区
+						// 13435260.0247,4503961.1227,//左下
+						// 13517200.5190,4564804.9972//右上
+						//烟台市
+						//13500873.417092249, 4490275.352795991, //左下
+						//13549793.11519476, 4520850.164110062 //右上
+						//中国
+						// 12667718, 2562800, 
+						// 12718359, 2597725 
+					]
+				}),
+				// 全屏--增加全屏控件
+				new ol.control.FullScreen(),
+				// 坐标拾取--实例化坐标拾取控件，并加入地图
+				mousePositionControl,
+				// 鹰眼--实例化一个OverviewMap类的对象，并加入到地图中（其他定制化可搜自定义鹰眼）
+				new ol.control.OverviewMap({
+					//collapsed: false     //默认展开
+				}),
+				// 实例化一个ScaleLine类的实例并加入到地图
+				new ol.control.ScaleLine()
+			
+			])
+        });
+		var projectionSelect = document.getElementById("projection");   // 选取投影的控件
+		projectionSelect.addEventListener('change', function(event){
+			// 使mousePositionControl控件的投影与选取投影控件选取的投影一致
+			mousePositionControl.setProjection(event.target.value);    
+		});
+		
+		var precisionInput = document.getElementById('precision');
+		precisionInput.addEventListener('change', function(event){
+			// 设置mousePositionControl控件的坐标格式
+			var format = ol.coordinate.createStringXY(event.target.valueAsNumber);
+			mousePositionControl.setCoordinateFormat(format);
+		});
+		
+		
+		//图层控制
+		var controls = document.getElementById('controls');
+		// 事件委托
+		controls.addEventListener('click', (event) => {
+			if (event.target.checked) { // 如果选中某一复选框
+				// 通过DOM元素的id值来判断应该对哪个图层进行显示
+				switch (event.target.id) {
+					case "osm":
+						map.getLayers().item(0).setVisible(true);
+						break;
+					case "gaodexyz1":
+						map.getLayers().item(1).setVisible(true);
+						break;
+					case "KFQJCDX":
+						map.getLayers().item(2).setVisible(true);
+						break;
+					case "KFQQX":
+						map.getLayers().item(3).setVisible(true);
+						break;
+					default:
+						break;
+				}
+			} else { // 如果取消某一复选框
+				// 通过DOM元素的id值来判断应该对哪个图层进行隐藏
+				switch (event.target.id) {
+					case "osm":
+						map.getLayers().item(0).setVisible(false);
+						break;
+					case "gaodexyz1":
+						map.getLayers().item(1).setVisible(false);
+						break;
+					case "KFQJCDX":
+						map.getLayers().item(2).setVisible(false);
+						break;
+					case "KFQQX":
+						map.getLayers().item(3).setVisible(false);
+						break;
+					default:
+						break;
+				}
+			}
+		});
+		
+		
+		
+		// 监听层级变化，输出当前层级和分辨率
+		map.getView().on('change:resolution', function() {
+			document.getElementById('zoom').innerHTML = this.getZoom() + '，';
+			document.getElementById('resolution').innerHTML = this.getResolution();
+		});
+		document.getElementById('zoom').innerHTML = map.getView().getZoom() + '，';
+		document.getElementById('resolution').innerHTML = +map.getView().getResolution();
+		
+		
+		
+        //矢量要素数据源
+        var source = new ol.source.Vector({
+            format: new ol.format.GeoJSON(),
+            url: '../data/geojson/zspty.json'
+        });
+        //聚合标注数据源
+        var clusterSource = new ol.source.Cluster({
+            distance: 40,               //聚合的距离参数，即当标注间距离小于此值时进行聚合，单位是像素
+            source: source              //聚合的数据源，即矢量要素数据源对象
+        });
+        //加载聚合标注的矢量图层
+        var styleCache = {};                    //用于保存特定数量的聚合群的要素样式
+        var clusters = new ol.layer.Vector({
+            source: clusterSource,
+            style: function (feature, resolution){
+                var size = feature.get('features').length;          //获取该要素所在聚合群的要素数量
+                var style = styleCache[size];
+                console.log(size);
+                if(!style){
+                    style = [
+                        new ol.style.Style({
+                            image: new ol.style.Circle({
+                                radius: 10,
+                                stroke: new ol.style.Stroke({
+                                    color: '#fff'
+                                }),
+                                fill: new ol.style.Fill({
+                                    color: '#3399CC'
+                                })
+                            }),
+                            text: new ol.style.Text({
+                                text: size.toString(),
+                                fill: new ol.style.Fill({
+                                    color: '#fff'
+                                })
+                            })
+                        })
+                    ];
+                    styleCache[size] = style;
+                }
+                return style;
+            }
+        });
+        map.addLayer(clusters);
+ 
+        // //添加聚合标注
+        // document.getElementById('addFeatures').onclick = function(){
+        //     //当前聚合标注数据源中的要素
+        //     var currentFeatures = clusterSource.getSource().getFeatures();
+        //     //如果聚合标注数据源中没有要素，则重新添加要素
+        //     if(currentFeatures.length == 0){
+        //         clusterSource.getSource().addFeatures(features);
+        //         clusters.setSource(clusterSource);
+        //         map.addLayer(clusters);
+        //     }
+        // }
+        // //移除聚合标注
+        // document.getElementById('removeFeatures').onclick = function(){
+        //     clusterSource.getSource().clear();        //移除聚合标注数据源中的所有要素
+        //     map.removeLayer(clusters);              //移除标注图层
+        // }
+    </script>
+</body>

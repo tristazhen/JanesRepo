@@ -1,0 +1,81 @@
+<div id="map" class="map"></div>
+    <script>
+        
+        //设置数据源属性
+        var wmsSource = new ol.source.TileWMS({
+            url: 'http://localhost:9999/geoserver/wfs',//端口号要改成自己的
+            params: {
+                'LAYERS': '？', //填写自己的地址中的layers=？
+                'TILED': true
+            },
+            serverType: 'geoserver',
+            // crossOrigin: 'anonymous',
+            projection: 'EPSG:4326'
+        });
+
+    
+
+        var wmsLayer = new ol.layer.Tile({
+            source: wmsSource
+        });
+        //设置视图
+        var view = new ol.View({
+            center: [102.43652, 30.76172],
+            zoom: 7,
+            projection : "EPSG:4326"
+        });
+        var osm =  new ol.layer.Tile({
+            source: new ol.source.OSM()
+        })
+        var map = new ol.Map({
+            loadTilesWhileInteracting: true,
+            target: 'map',
+            view: view
+        });
+        map.addLayer(osm);
+        map.addLayer(wmsLayer);
+
+        function btnClick(){
+            //首先定义一个空的矢量图层，设置样式并添加到当前map中
+            var vectorSource = new ol.source.Vector;
+            var vector = new ol.layer.Vector({
+                source: vectorSource,
+                style: new ol.style.Style({
+                    fill: new ol.style.Fill({
+                        color: 'white'
+                    }),
+                    stroke:new ol.style.Stroke({
+                        color: 'red',
+                        width:1
+                    })
+                })
+            });
+            map.addLayer(vector);
+
+            //设置查询参数与条件
+            var featureRequest = new ol.format.WFS().writeGetFeature({
+                srsName: 'EPSG:4326',//坐标系统
+                featureNS: 'http://geoserver.org',//命名空间 URI
+                featurePrefix: 'test',//工作区名称
+                featureTypes: ['test:sichuan_xianjie'],//查询图层，可以是同一个工作区下多个图层，逗号隔开
+                outputFormat: 'application/json',
+                filter: ol.format.filter.equalTo("NAME",document.getElementById("st").value)//前者是属性名，后者是对应值
+            });
+
+            fetch('http://localhost:9999/geoserver/wfs', {//geoserver wfs地址如localhost:8080/geoserver/wfs，我是9999
+                method: 'POST',
+                body: new XMLSerializer().serializeToString(featureRequest)
+            }).then(function(response) {
+                return response.json();
+            }).then(function(json) {
+                var features = new ol.format.GeoJSON().readFeatures(json);
+                vectorSource.addFeatures(features);
+                map.getView().fit(vectorSource.getExtent());//缩放到查询出的feature
+            });
+        }
+        
+    </script>
+     <div id="query">
+        <input type="text" value="" id="st"/>
+        <button id="b" onclick="btnClick()">click me</button>
+    </div>

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta http-equiv="X-UA-Compatible" content="ie=edge">
+		<title>WMS地图属性查询</title>
+		<link rel="stylesheet" href="../OpenLayer/css/ol.css" type="text/css">
+		<script src="../OpenLayer/build/ol.js"></script>
+		<script src="../js/jquery-2.1.1.min.js"></script>
+		<style>
+			.map {
+				/* height: 800px;
+				width: 100%; */
+			}
+			/* zoom图层控制 */
+			#map .ol-zoom .ol-zoom-out {
+				margin-top: 204px;
+			}
+			#map .ol-zoomslider {
+				background-color: transparent;
+				top: 2.3em;
+			}
+			#map .ol-zoom-extent {
+				top: 280px;
+			}
+			//自定义的样式
+			#map .ol-full-screen {
+				top: auto !important;
+				bottom: .5em;
+			}
+			#map .ol-mouse-position {
+				top: auto !important;
+				bottom: .5em;
+			}
+			#map .ol-overviewmap {
+				bottom: 2.5em;
+			}
+			#map .ol-rotate {
+				right: 2.5em;
+			}
+			#query {
+				float:right;
+				padding-right:5px;
+			}
+			
+			a.skiplink {
+				position: absolute;
+				clip: rect(1px, 1px, 1px, 1px);
+				padding: 0;
+				border: 0;
+				height: 1px;
+				width: 1px;
+				overflow: hidden;
+			}
+	 
+			a.skiplink:focus {
+				clip: auto;
+				height: auto;
+				width: auto;
+				background-color: #fff;
+				padding: 0.3em;
+			}
+	 
+			#map:focus {
+				outline: #4A74A8 solid 0.15em;
+			}
+		</style>
+	</head>
+	<body>
+		<h2>My Map-加载矢量地图</h2>
+		<div id="controls">
+			<input type="checkbox" id="osm" checked />OSM底图
+			<input type="checkbox" id="test" checked />开发区测试数据
+		</div>
+		<div id="query">
+		    <input type="text" value="" id="st"/>
+		    <button id="b" onclick="btnClick()">click me</button>
+			<button onclick="upParam()">更新图形过滤条件</button>
+			<button onclick="upatrParam()">更新属性过滤条件</button>
+			<button onclick="removeupatrParam()">移除过滤</button>
+
+		</div>
+		<div id="map" class="map"></div>
+		<div><span>当前层级：</span><span id="zoom"></span><span>分辨率：</span><span id="resolution"></span></div>
+		 <div id="info">&nbsp;</div>
+		<script type="text/javascript">
+			var WMSurl = 'http://localhost:6080/arcgis/services/开发区管线健康档案云/test/MapServer/WMSServer';
+			let arr = []
+			for (let i = 0; i < 2; i++) {
+				arr.push(i)
+			}
+			let str = arr.join(',')
+			//设置数据源属性
+			var wmsSource = new ol.source.TileWMS({
+				url: WMSurl,//端口号要改成自己的
+				params: {
+					'LAYERS': '0', //填写自己的地址中的layers=？
+					'TILED': true,
+					// 'exceptions"’: 'application/vnd.ogc.se_inimage',
+					"CQL_FILTER": "NAME ='大季家街道'"//属性过滤
+					//"CQL_FILTER": "INTERSECTS(the_geom, POLYGON((-74.01256 40.70726, -74.00782 40.70749, -74.01031 40.71075,-74.01256 40.70726)))"//空间过滤添加
+					/* filter: ol.format.filter.and(
+					ol.format.filter.like('NAME', 'museam'),
+					ol.format.filter.equalTo('waterway', 'riverbank'))*///多个条件联合在一起
+
+				},
+				projection: 'EPSG:3857',
+				serverType:'mapserver'
+			});
+			
+			// 创建地图
+			let map = new ol.Map({
+				target: 'map',
+				layers: [
+					new ol.layer.Tile({ // 底图
+						source: new ol.source.OSM()
+					}),
+					new ol.layer.Tile({
+					  source: wmsSource
+					})
+				],
+				view: new ol.View({
+					center: ol.proj.fromLonLat([121.06, 37.68],"EPSG:102113"),
+					zoom: 11
+				}),
+
+				//图层控制
+				controls: ol.control.defaults({
+					//隐藏归属信息
+					attribution: false
+				}).extend([
+					// 往地图增加滑块缩放控件zoom
+					new ol.control.ZoomSlider(),
+					// 缩放至特定位置控件
+					new ol.control.ZoomToExtent({
+						extent: [
+							13435260.0247,4503961.1227,//左下
+							13517200.5190,4564804.9972 //右上
+							// 12667718, 2562800, 
+							// 12718359, 2597725 
+						]
+					}),
+					// 全屏--增加全屏控件
+					new ol.control.FullScreen(),
+					// 坐标拾取--实例化坐标拾取控件，并加入地图
+					new ol.control.MousePosition(),
+					// 鹰眼--实例化一个OverviewMap类的对象，并加入到地图中（其他定制化可搜自定义鹰眼）
+					new ol.control.OverviewMap({
+						//collapsed: false     //默认展开
+					}),
+					// 实例化一个ScaleLine类的实例并加入到地图
+					new ol.control.ScaleLine()
+
+				])
+
+			});
+			// var bounds = [13435260.0247,4503961.1227,//左下
+			// 				13517200.5190,4564804.9972];//右上
+			// map.getView().fit(bounds, map.getSize());
+			//图层控制
+			var controls = document.getElementById('controls');
+			// 事件委托
+			controls.addEventListener('click', (event) => {
+				if (event.target.checked) { // 如果选中某一复选框
+					// 通过DOM元素的id值来判断应该对哪个图层进行显示
+					switch (event.target.id) {
+						case "osm":
+							map.getLayers().item(0).setVisible(true);
+							break;
+						case "test":
+							map.getLayers().item(1).setVisible(true);
+							break;
+						default:
+							break;
+					}
+				} else { // 如果取消某一复选框
+					// 通过DOM元素的id值来判断应该对哪个图层进行隐藏
+					switch (event.target.id) {
+						case "osm":
+							map.getLayers().item(0).setVisible(false);
+							break;
+						case "test":
+							map.getLayers().item(1).setVisible(false);
+							break;
+						default:
+							break;
+					}
+				}
+			});
+			// 监听层级变化，输出当前层级和分辨率
+			map.getView().on('change:resolution', function() {
+				document.getElementById('zoom').innerHTML = this.getZoom() + '，';
+				document.getElementById('resolution').innerHTML = this.getResolution();
+			})
+
+			document.getElementById('zoom').innerHTML = map.getView().getZoom() + '，';
+			document.getElementById('resolution').innerHTML = +map.getView().getResolution();
+			
+			
+			function upParam() {
+				wmsSource.updateParams({
+					CQL_FILTER: "INTERSECTS(the_geom, POLYGON((-74.01256 40.70726, -74.00782 40.70749, -74.01031 40.71075,-74.01256 40.70726)))"
+				});
+			}
+			function upatrParam() {
+				var str = "NAME ='	大季家街道'";
+				wmsSource.updateParams({
+					CQL_FILTER: str
+				});
+			}
+			function removeupatrParam() {
+				wmsSource.updateParams({
+					CQL_FILTER: null
+				});
+			}
+
+			//点击查询
+			map.on('singleclick', function (evt) {
+			    document.getElementById('info').innerHTML = '';
+			    var viewResolution = /** @type {number} */ (map.getView().getResolution());
+			    var url = wmsSource.getGetFeatureInfoUrl(
+					evt.coordinate,
+					viewResolution,
+					'EPSG:3857',
+					{'INFO_FORMAT': 'text/html'}
+			  );
+			if (url) {
+			//http请求结果数据
+			    fetch(url)
+		// 			$.ajax({
+		// 				url: url,
+		// 				async: false,
+		// 				dataType: 'json',
+		// 				success: function(data) {
+		// 					if (data.features.length > 0) {
+		// 						//解析geojson结果
+		// 						var feature = data.features[0];
+		// 						//获取wms服务中想要的属性
+		// 						var fdid = feature.properties.fdid;
+		// 						var fdno = feature.properties.fdno;
+		// 						console.log(fdid,fdno);
+		// 					} else {
+		// 						document.getElementById('info').innerHTML = '';
+		// 						overlay.setPosition(undefined);
+		// 					}
+		// 				}
+		// 			})
+							 
+			        .then(function (response) { return response.text(); })
+			        .then(function (html) {
+						document.getElementById('info').innerHTML = html;
+			        });
+			    }
+			});
+			
+			map.on('pointermove', function (evt) {
+				if (evt.dragging) {
+					return;
+				}
+				var pixel = map.getEventPixel(evt.originalEvent);
+				var hit = map.forEachLayerAtPixel(pixel, function () {
+					return true;
+				});
+				map.getTargetElement().style.cursor = hit ? 'pointer' : '';
+			});
+			
+			
+		// 	//条件查询
+		// 	function btnClick(){
+		// 	    //首先定义一个空的矢量图层，设置样式并添加到当前map中
+		// 	    var vectorSource = new ol.source.Vector;
+		// 	    var vector = new ol.layer.Vector({
+		// 	        source: vectorSource,
+		// 	        style: new ol.style.Style({
+		// 	            fill: new ol.style.Fill({
+		// 	                color: 'white'
+		// 	            }),
+		// 	            stroke:new ol.style.Stroke({
+		// 	                color: 'red',
+		// 	                width:1
+		// 	            })
+		// 	        })
+		// 	    });
+		// 	    map.addLayer(vector);
+			
+		// 	    //设置查询参数与条件
+		// 	    var featureRequest = new ol.format.WFS().writeGetFeature({
+		// 	        srsName: 'EPSG:3857',//坐标系统
+		// 	        featureNS: WMSurl,//命名空间 URI
+		// 	        featurePrefix: 'test',//工作区名称
+		// 	        featureTypes: ['test:0'],//查询图层，可以是同一个工作区下多个图层，逗号隔开
+		// 	        outputFormat: 'application/json',
+		// 	        filter: ol.format.filter.equalTo("NAME",document.getElementById("st").value)//前者是属性名，后者是对应值
+		// 	    });
+			
+		// 	    fetch(WMSurl, {//geoserver wfs地址如localhost:8080/geoserver/wfs，我是9999
+		// 	        method: 'POST',
+		// 	        body: new XMLSerializer().serializeToString(featureRequest)
+		// 	    }).then(function(response) {
+		// 	        return response.json();
+		// 	    }).then(function(json) {
+		// 	        var features = new ol.format.GeoJSON().readFeatures(json);
+		// 	        vectorSource.addFeatures(features);
+		// 	        map.getView().fit(vectorSource.getExtent());//缩放到查询出的feature
+		// 	    });
+		// 	}
+		
+		</script>
+	</body>
+</html>

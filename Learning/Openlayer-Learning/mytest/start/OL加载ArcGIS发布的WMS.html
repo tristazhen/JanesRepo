@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Vector ArcGIS WMS</title>
+    <link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css">
+    <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+    <script src="https://openlayers.org/en/v4.6.5/build/ol.js"></script>
+  </head>
+  <body>
+    <div id="map" class="map"></div>
+    <script>
+      var url = 'http://localhost:6080/arcgis/services/开发区管线健康档案云/GXJCPS/MapServer/WMSServer';//http://localhost:6080/arcgis/rest/services/szdt_CAD/haishanzhan/MapServer
+      var pos = ol.proj.transform([121.06, 37.68], 'EPSG:4326', 'EPSG:3857');
+      var layers = [
+        new ol.layer.Tile({
+          source: new ol.source.OSM()
+        }),
+		new ol.layer.Image({
+			source: new ol.source.ImageWMS({
+				url:'http://localhost:6080/arcgis/services/开发区管线健康档案云/JCDX/MapServer/WMSServer',
+				params: {
+					'LAYERS': '2,7,9,11,13,15,17,19,21,23,28,29,30,32,33,34,36,37,38,40,41,43,44,46,47,48,49,51,52,53,54,56,57,58,59,61,62,63,74,75,76,77,78,79,80,81,82',
+					'TILED': false,
+				},
+				projection: 'EPSG:3857',
+				// serverType: 'geoserver'
+			})
+		}),
+        new ol.layer.Tile({
+          source: new ol.source.TileWMS({
+            params: {
+            	'LAYERS':'0,1,2,3,4,5,6,7,8,9,10',
+            	'TILED':false
+ 
+            },
+            url: url,
+            projection: 'EPSG:3857',
+            // serverType:'mapserver'
+          })
+        })
+      ];
+ 
+      var map = new ol.Map({
+        layers: layers,
+        target: 'map',
+        view: new ol.View({
+          center: pos,
+          zoom: 10
+        })
+      });
+      
+    </script>
+  </body>
+</html>

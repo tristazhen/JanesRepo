@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>WMS GetFeatureInfo (Tile Layer)</title>
+	<link rel="stylesheet" href="../OpenLayer/css/ol.css" type="text/css">
+	<script src="../OpenLayer/build/ol.js"></script>
+    <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
+    <!-- <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script> -->
+
+  </head>
+  <body>
+    <div id="map" class="map"></div>
+    <div id="info"></div>
+    <script>
+		let arr = []
+		for (let i = 0; i < 83; i++) {
+			arr.push(i)
+		}
+		let str = arr.join(',')
+		var url = 'http://192.168.80.168:6080/arcgis/services/管线健康档案云平台/基础地形/MapServer/WMSServer';
+		var wmsSource = new ol.source.TileWMS({
+		  params: {
+		  	'LAYERS':str,
+		  	'TILED':false 
+		  },
+		  url: url,
+		  projection: 'EPSG:3857',
+		  // serverType:'mapserver'
+		});
+      // WMS瓦片图层
+      var wmsLayer = new ol.layer.Tile({
+        source: wmsSource
+      });
+ 
+      var view = new ol.View({
+        center: ol.proj.fromLonLat([121.06, 37.68]),
+        zoom: 11
+      });
+ 
+      var map = new ol.Map({
+        layers: [wmsLayer],
+        target: 'map',
+        view: view
+      });
+ 
+      // 在地图上单击的时候获取要素信息
+      map.on('singleclick', function(evt) {
+        document.getElementById('info').innerHTML = '';
+        var viewResolution =(view.getResolution());
+        var url = wmsLayer.getSource().getGetFeatureInfoUrl(
+            evt.coordinate, viewResolution, 'EPSG:3857',
+            {'INFO_FORMAT': 'application/vnd.ogc.wms_xml'});
+        if (url) {
+			console.log(url)
+          document.getElementById('info').innerHTML =
+              '<iframe seamless src="' + url + '"></iframe>';
+        }
+      });
+ 
+      // 根据map的forEachLayerAtPixel方法来判断当前像素位置是否有要素，如果有则改变鼠标样式
+      map.on('pointermove', function(evt) {
+        if (evt.dragging) {
+          return;
+        }
+        var pixel = map.getEventPixel(evt.originalEvent);
+        var hit = map.forEachLayerAtPixel(pixel, function() {
+          return true;
+        });
+        map.getTargetElement().style.cursor = hit ? 'pointer' : '';
+      });
+    </script>
+  </body>
+</html>

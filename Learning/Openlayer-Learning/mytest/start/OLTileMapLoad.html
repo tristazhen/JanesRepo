@@ -62,6 +62,8 @@
 			<br />
 			<input type="checkbox" id="baidu" />Baidu
 			<input type="checkbox" id="google" />Google
+			<input type="checkbox" id="tdtlw" />天地图路网
+			<input type="checkbox" id="tdtbz" />天地图标注
 		</div>
 		<div id="map" class="map"></div>
 		<div><span>当前层级：</span><span id="zoom"></span><span>分辨率：</span><span id="resolution"></span></div>
@@ -208,6 +210,22 @@
 							url: 'http://www.google.cn/maps/vt/pb=!1m4!1m3!1i{z}!2i{x}!3i{y}!2m3!1e0!2sm!3i345013117!3m8!2szh-CN!3scn!5e1105!12m4!1e68!2m2!1sset!2sRoadmap!4e0'
 						}),
 						visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({
+					  source: new ol.source.XYZ({
+					    url: 'https://t0.tianditu.gov.cn/img_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=img&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=01648a46241de4244d518d8e151b3528',
+					  }),
+					  isGroup: true,
+					  name: '天地图路网',
+					  visible: false // 先隐藏该图层
+					}),
+					new ol.layer.Tile({
+					  source: new ol.source.XYZ({
+					    url: 'https://t0.tianditu.gov.cn/DataServer?T=cia_w&x={x}&y={y}&l={z}&tk=2ce94f67e58faa24beb7cb8a09780552'
+					  }),
+					  isGroup: true,
+					  name: '天地图文字标注',
+					  visible: false // 先隐藏该图层
 					})
 				],
 
@@ -293,6 +311,12 @@
 						case "google":
 							map.getLayers().item(11).setVisible(true);
 							break;
+						case "tdtlw":
+							map.getLayers().item(12).setVisible(true);
+							break;
+						case "tdtbz":
+							map.getLayers().item(13).setVisible(true);
+							break;
 						default:
 							break;
 					}
@@ -334,6 +358,13 @@
 							break;
 						case "google":
 							map.getLayers().item(11).setVisible(false);
+							break;
+						case "tdtlw":
+							map.getLayers().item(12).setVisible(false);
+							break;
+						case "tdtbz":
+							map.getLayers().item(13).setVisible(false);
+							break;
 						default:
 							break;
 					}

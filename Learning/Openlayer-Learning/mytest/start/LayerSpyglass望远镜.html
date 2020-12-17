@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>望远镜</title>
+    <link rel="stylesheet" href="../OpenLayer/css/ol.css" type="text/css">
+    <script src="../OpenLayer/build/ol.js"></script>
+	<style>
+	      .map {
+	        width: 100%;
+	        height:400px;
+	      }
+	</style>
+</head>
+<body>
+    <div id="map" class="map"></div>
+ 
+    <script>
+        // Bing地图的key
+        var key = 'AktRwz58F4poZNGJ9Y69G2WnbOKIsckPaL19qBlQ0ajBxPILuWaLtcphiaDztwnh';
+        
+        var roads = new ol.layer.Tile({
+          source: new ol.source.BingMaps({
+            key: key,
+            imagerySet: 'Road'
+          }),
+        });
+        
+        var imagery = new ol.layer.Tile({
+          source: new ol.source.BingMaps({
+            key: key,
+            imagerySet: 'Aerial'
+          }),
+        });
+        
+        var container = document.getElementById('map');
+        
+        var map = new ol.Map({
+          layers: [roads, imagery],
+          target: container,
+          view: new ol.View({
+            center: ol.proj.fromLonLat([105.02, 36.12]),
+            zoom: 4,
+          }),
+        });
+        
+        var radius = 75;                        // 用于控制图层望远镜的半径
+        document.addEventListener('keydown', function(evt){
+            console.log(100);
+            if(evt.keyCode === 38){            
+                console.log(1);       
+                // 如果用户按下'↑'键，望远镜的半径增加5像素
+                radius = Math.min(radius + 5, 150);
+                map.render();
+                evt.preventDefault();
+            }else if(evt.keyCode === 40){
+                // 如果用户按下'↓'键，望远镜的半径减少5像素
+                radius = Math.max(radius - 5, 25);
+                map.render();
+                evt.preventDefault();
+            }
+        });
+         
+         
+        var mousePosition = null;                       // 用于实时保存鼠标光标所在的像素的位置
+        container.addEventListener('mousemove', function(event){
+            // 每次鼠标移动就获取鼠标光标所在像素相对于地图视口的位置， 并重新渲染一次地图
+            mousePosition = map.getEventPixel(event);
+            map.render();
+        });
+         
+        container.addEventListener('mouseout', function(){
+            // 鼠标移出地图容器，鼠标位置设置为空，并重新渲染一次地图
+            mousePosition = null;
+            map.render();
+        });
+        
+        imagery.on('precompose', function(event){       // 在每次绘制影像图层之前触发
+            var ctx = event.context;      // 获取canvase渲染上下文
+            var pixelRatio = event.frameState.pixelRatio;  // 获取地图当前帧的像素比率
+            ctx.save();                 // 保存当前canvas设置
+            ctx.beginPath();            // 开始绘制路径
+            if(mousePosition){
+                // 绘制一个围绕鼠标光标的圆
+                ctx.arc(mousePosition[0] * pixelRatio, mousePosition[1] * pixelRatio, 
+                    radius * pixelRatio, 0, 2 * Math.PI);
+                    ctx.lineWidth = 5 * pixelRatio;
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+                    ctx.stroke();
+            }
+            ctx.clip();   // 使用刚绘制的圆裁剪影像图层，使得影像图层只保留该圆的范围
+        });
+         
+        // 在每次绘制影像图层之后触发
+        imagery.on('postcompose', function(event){
+            var ctx = event.context;
+            ctx.restore();                  // canvas恢复到之前的设置
+        })
+    </script>
+</body>
